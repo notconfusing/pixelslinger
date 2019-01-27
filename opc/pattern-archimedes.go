@@ -8,11 +8,12 @@ package opc
 import (
 	"github.com/longears/pixelslinger/colorutils"
 	"github.com/longears/pixelslinger/midi"
+	"github.com/lucasb-eyer/go-colorful"
 	"math"
 	"time"
 )
 
-func Spiral(x, y, t, SPIRAL_tightness, SPIRAL_speed, SPIRAL_thickness float64, SPIRAL_rings int) float64 {
+func Spiral(x, y, t, SPIRAL_tightness, SPIRAL_speed, SPIRAL_thickness, SPIRAL_thickness_gradient float64, SPIRAL_rings int) float64 {
 	lhs := math.Sqrt((x*x + y*y))
 
 	tt := t * SPIRAL_speed
@@ -31,7 +32,7 @@ func Spiral(x, y, t, SPIRAL_tightness, SPIRAL_speed, SPIRAL_thickness float64, S
 		diff := lhs - rhs
 		abs_diff := math.Abs(diff)
 		if abs_diff < SPIRAL_thickness {
-			on_amount += 1
+			on_amount += 1 - math.Pow(abs_diff, SPIRAL_thickness_gradient)
 		}
 	}
 	return on_amount
@@ -52,14 +53,42 @@ func MakePatternArchimedes(locations []float64) ByteThread {
 				z := locations[ii*3+2]
 				y = z //actually need to target x-z plane
 
-				spiral1 := Spiral(x, y, t, 0.1, 2, 0.05, 4)
-				spiral2 := Spiral(x, y, t, -0.1, 4, 0.05, 4)
-				spiral3 := Spiral(x, y, t, -0.05, 6, 0.02, 8)
+				spiral1 := Spiral(x, y, t, 0.1, 2, 0.05, 0.9, 4)
+				spiral2 := Spiral(x, y, t, -0.1, 4, 0.05, 0.5, 4)
+				spiral3 := Spiral(x, y, t, -0.05, 8, 0.1, 0.3, 8)
+				spiral4 := Spiral(x, y, t, 0.5, 0.5, 0.5, 0.4, 3)
+				spiral5 := Spiral(x, y, t, -0.5, 0.25, 0.5, 0.4, 3)
 
-				r := spiral3
-				g := spiral1
-				b := spiral2
+				var (
+					//White = colorful.LinearRgb(1, 1, 1)
+					//Black = colorful.LinearRgb(0, 0, 0)
+					deepRed      = colorful.LinearRgb(1.0, 0.2, 0.2)
+					flesh        = colorful.LinearRgb(1.0, 0.35, 0.25)
+					peachSherbet = colorful.LinearRgb(1.0, 0.5, 0.3)
+					cantaloupe   = colorful.LinearRgb(1.0, 0.65, 0.35)
+					dimPeach     = colorful.LinearRgb(1.0, 0.8, 0.4)
+				)
 
+				colors := [5]colorful.Color{deepRed, flesh, peachSherbet, cantaloupe, dimPeach}
+				spirals := [5]float64{spiral1, spiral2, spiral3, spiral4, spiral5}
+
+				linear_weight := 0.6
+				r := 0.0
+				g := 0.0
+				b := 0.0
+				for cs := 0; cs < len(spirals); cs++ {
+					//fmt.Println("cs, color, spiras")
+					//fmt.Println(cs)
+					//fmt.Println(colors[cs].R)
+					//fmt.Println(spirals[cs])
+					//fmt.Println(linear_weight)
+					//fmt.Println(linear_weight * colors[cs].R * spirals[cs])
+					r += linear_weight * colors[cs].R * spirals[cs]
+					g += linear_weight * colors[cs].G * spirals[cs]
+					b += linear_weight * colors[cs].B * spirals[cs]
+				}
+
+				//fmt.Println(r)
 				bytes[ii*3+0] = colorutils.FloatToByte(r)
 				bytes[ii*3+1] = colorutils.FloatToByte(g)
 				bytes[ii*3+2] = colorutils.FloatToByte(b)
