@@ -12,13 +12,30 @@ import (
 	"time"
 )
 
-//func makeSpiral() ByteThread{
-//	return func(x,y, t, rings, SPIRAL_tightness, SPIRAL_speed, SPIRAL_thickness float64){
-//
-//		spiral_amount :=
-//		return spiral_amount
-//	}
-//}
+func Spiral(x, y, t, SPIRAL_tightness, SPIRAL_speed, SPIRAL_thickness float64, SPIRAL_rings int) float64 {
+	lhs := math.Sqrt((x*x + y*y))
+
+	tt := t * SPIRAL_speed
+	rhs_num := y*math.Cos(tt) + x*math.Sin(tt)
+	rhs_den := x*math.Cos(tt) - y*math.Sin(tt)
+	rhs_canonical := math.Atan2(rhs_num, rhs_den) * SPIRAL_tightness
+
+	on_amount := 0.0
+	for ring := 0; ring <= SPIRAL_rings; ring++ {
+		SPIRAL_offset := SPIRAL_tightness * (2 * math.Pi)
+		multSign := +1.0
+		if SPIRAL_tightness < 0 {
+			multSign = -1.0
+		}
+		rhs := rhs_canonical + (multSign * (float64(ring) * SPIRAL_offset))
+		diff := lhs - rhs
+		abs_diff := math.Abs(diff)
+		if abs_diff < SPIRAL_thickness {
+			on_amount += 1
+		}
+	}
+	return on_amount
+}
 
 func MakePatternArchimedes(locations []float64) ByteThread {
 	return func(bytesIn chan []byte, bytesOut chan []byte, midiState *midi.MidiState) {
@@ -33,40 +50,15 @@ func MakePatternArchimedes(locations []float64) ByteThread {
 				x := locations[ii*3+0]
 				y := locations[ii*3+1]
 				z := locations[ii*3+2]
+				y = z //actually need to target x-z plane
 
-				//tao := 2*math.Pi
+				spiral1 := Spiral(x, y, t, 0.1, 2, 0.05, 4)
+				spiral2 := Spiral(x, y, t, -0.1, 4, 0.05, 4)
+				spiral3 := Spiral(x, y, t, -0.05, 6, 0.02, 8)
 
-				SPIRAL_tightness := -0.1
-				SPIRAL_thickness := 0.05
-				SPIRAL_speed := 3.0
-				SPIRAL_rings := 4
-
-				tt := t * SPIRAL_speed
-
-				y = z
-				lhs := math.Sqrt((x*x + y*y))
-				rhs_num := y*math.Cos(tt) + x*math.Sin(tt)
-				rhs_den := x*math.Cos(tt) - y*math.Sin(tt)
-				rhs_canonical := math.Atan2(rhs_num, rhs_den) * SPIRAL_tightness
-
-				on_amount := 0.0
-				for ring := 0; ring <= SPIRAL_rings; ring++ {
-					SPIRAL_offset := SPIRAL_tightness * (2 * math.Pi)
-					multSign := +1.0
-					if SPIRAL_tightness < 0 {
-						multSign = -1.0
-					}
-					rhs := rhs_canonical + (multSign * (float64(ring) * SPIRAL_offset))
-					diff := lhs - rhs
-					abs_diff := math.Abs(diff)
-					if abs_diff < SPIRAL_thickness {
-						on_amount += 1
-					}
-				}
-
-				r := 0.0
-				g := on_amount
-				b := 0.0
+				r := spiral3
+				g := spiral1
+				b := spiral2
 
 				bytes[ii*3+0] = colorutils.FloatToByte(r)
 				bytes[ii*3+1] = colorutils.FloatToByte(g)
