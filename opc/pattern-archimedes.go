@@ -10,6 +10,7 @@ import (
 	"github.com/longears/pixelslinger/midi"
 	"github.com/lucasb-eyer/go-colorful"
 	"math"
+	"math/rand"
 	"time"
 )
 
@@ -53,11 +54,32 @@ func MakePatternArchimedes(locations []float64) ByteThread {
 				z := locations[ii*3+2]
 				y = z //actually need to target x-z plane
 
-				spiral1 := Spiral(x, y, t, 0.1, 2, 0.05, 0.9, 4)
-				spiral2 := Spiral(x, y, t, -0.1, 4, 0.05, 0.5, 4)
-				spiral3 := Spiral(x, y, t, -0.05, 8, 0.1, 0.3, 8)
-				spiral4 := Spiral(x, y, t, 0.5, 0.5, 0.5, 0.4, 3)
-				spiral5 := Spiral(x, y, t, -0.5, 0.25, 0.5, 0.4, 3)
+				//noi := math.Abs(rand.Float64() *0.000000000000001)
+				noi := 1.0
+				reverse_periodicity := 20.0
+				reverse_dur := 5.0
+				reverse_mod := math.Mod(t, reverse_periodicity)
+				// first half
+				if reverse_mod < reverse_dur {
+					noi = -1 * reverse_mod
+				}
+				//second half
+				if reverse_mod > reverse_dur && reverse_mod < 2*reverse_dur {
+					noi = -1 * (2*reverse_dur - reverse_mod)
+				}
+				if reverse_mod > 2*reverse_dur && reverse_mod < 2*reverse_dur+1 {
+					noi = math.Pow(reverse_mod-2*reverse_dur, 0.2)
+				}
+				//noi = 0.0
+				//fmt.Println(noi)
+				noii := math.Abs(rand.Float64() * 0.0000000001)
+				//fmt.Println(noii)
+				//noii = 0.0
+				spiral1 := Spiral(x, y, t, 0.1*noi, 2+noii, 0.05, 0.9, 4)
+				spiral2 := Spiral(x, y, t, -0.1*noi, 4+noii, 0.05, 0.5, 4)
+				spiral3 := Spiral(x, y, t, -0.05*noi, 8+noii, 0.1, 0.3, 8)
+				spiral4 := Spiral(x, y, t, 0.5*noi, 0.5+noii, 0.5, 0.4, 3)
+				spiral5 := Spiral(x, y, t, -0.5*noi, 0.25+noii, 0.5, 0.4, 3)
 
 				var (
 					//White = colorful.LinearRgb(1, 1, 1)
@@ -67,25 +89,40 @@ func MakePatternArchimedes(locations []float64) ByteThread {
 					peachSherbet = colorful.LinearRgb(1.0, 0.5, 0.3)
 					cantaloupe   = colorful.LinearRgb(1.0, 0.65, 0.35)
 					dimPeach     = colorful.LinearRgb(1.0, 0.8, 0.4)
+					//alts
+					are           = colorful.LinearRgb(0.95, 0.54, 0.89)
+					driftingPetal = colorful.LinearRgb(0.78, 0.41, 0.74)
+					influences    = colorful.LinearRgb(0.77, 0.16, 0.94)
+					kleinBlue     = colorful.LinearRgb(0.14, 0.26, 0.64)
+					afekCouch     = colorful.LinearRgb(0.17, 0.22, 0.37)
+					// alt alts
+					coolmint   = colorful.LinearRgb(0.33, 0.67, 0.58)
+					freshmint  = colorful.LinearRgb(0.6, 0.89, 0.87)
+					spearmint  = colorful.LinearRgb(0.39, 0.61, 0.6)
+					guava      = colorful.LinearRgb(0.58, 0.87, 0.73)
+					mintCoolee = colorful.LinearRgb(0.27, 0.49, 0.45)
 				)
 
 				colors := [5]colorful.Color{deepRed, flesh, peachSherbet, cantaloupe, dimPeach}
+				altColors := [5]colorful.Color{are, driftingPetal, influences, kleinBlue, afekCouch}
+				altColors = [5]colorful.Color{coolmint, freshmint, spearmint, guava, mintCoolee}
 				spirals := [5]float64{spiral1, spiral2, spiral3, spiral4, spiral5}
 
 				linear_weight := 0.6
 				r := 0.0
 				g := 0.0
 				b := 0.0
+				s1 := math.Pow(colorutils.Cos(t, 0, reverse_periodicity, 0, 1), 0.2)
+				r1 := 1 - s1
+				//fmt.Println(altColors[1])
 				for cs := 0; cs < len(spirals); cs++ {
-					//fmt.Println("cs, color, spiras")
-					//fmt.Println(cs)
-					//fmt.Println(colors[cs].R)
-					//fmt.Println(spirals[cs])
-					//fmt.Println(linear_weight)
-					//fmt.Println(linear_weight * colors[cs].R * spirals[cs])
-					r += linear_weight * colors[cs].R * spirals[cs]
-					g += linear_weight * colors[cs].G * spirals[cs]
-					b += linear_weight * colors[cs].B * spirals[cs]
+					rr := s1*(colors[cs].R) + r1*(altColors[cs].R)
+					gg := s1*(colors[cs].G) + r1*(altColors[cs].G)
+					bb := s1*(colors[cs].B) + r1*(altColors[cs].B)
+
+					r += linear_weight * rr * spirals[cs]
+					g += linear_weight * gg * spirals[cs]
+					b += linear_weight * bb * spirals[cs]
 				}
 
 				//fmt.Println(r)
